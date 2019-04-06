@@ -28,12 +28,12 @@ contract Exchanger {
         uint32 _sellerNonce,
         uint256 _sellerValue,
         uint256 _sellerRate,
-        bytes memory _sellerSign,
+        bytes calldata _sellerSign,
         address _buyerAddress,
         uint32 _buyerNonce,
         uint256 _buyerValue,
         uint256 _buyerRate,
-        bytes memory _buyerSign,
+        bytes calldata _buyerSign,
         uint256 _tradeRate
     )
         onlyBackend
@@ -80,6 +80,7 @@ contract Exchanger {
         bytes memory _sign
     )
         internal
+        pure
         returns (bool)
     {
         bytes32 message = _prefixed(keccak256(abi.encodePacked(_nonce, _value, _rate)));
