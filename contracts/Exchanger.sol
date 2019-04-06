@@ -5,6 +5,9 @@ import "CurrencyContract.sol";
 contract Exchanger {
     address public owner;
     address public backend;
+    uint256 BASE = 10000;
+
+    using SafeMath for uint256;
 
     CurrencyContract currency1;
     CurrencyContract currency2;
@@ -31,26 +34,36 @@ contract Exchanger {
         bool isActive;
     }
 
-    mapping (address => mapping (uint32 => Order)) public orders;
+    mapping (address => mapping (uint256 => Order)) public orders;
 
     function exchange(
-        address _sellerAddress,
-        uint32 _sellerNonce,
-        uint256 _sellerValue,
-        uint256 _sellerRate,
         bytes calldata _sellerSign,
-        address _buyerAddress,
-        uint32 _buyerNonce,
-        uint256 _buyerValue,
-        uint256 _buyerRate,
         bytes calldata _buyerSign,
-        uint256 _tradePrice
+        address _sellerAddress,
+        address _buyerAddress,
+//        uint256 _sellerNonce, 0
+//        uint256 _sellerValue, 1
+//        uint256 _sellerRate, 2
+//        uint256 _buyerNonce, 3
+//        uint256 _buyerValue, 4
+//        uint256 _buyerRate, 5
+//        uint256 _tradePrice 6
+        uint256[7] calldata args
     )
         onlyBackend
         external
     {
-        require(_checkSignature(_sellerAddress, _sellerNonce, _sellerValue, _sellerRate, false, _sellerSign));
-        require(_checkSignature(_buyerAddress, _buyerNonce, _buyerValue, _buyerRate, true, _buyerSign));
+        require(_checkSignature(_sellerAddress, args[0], args[1], args[2], false, _sellerSign));
+        require(_checkSignature(_buyerAddress, args[3], args[4], args[5], true, _buyerSign));
+
+        uint256 _sellerNonce = args[0];
+        uint256 _sellerValue = args[1];
+        uint256 _sellerRate = args[2];
+        uint256 _buyerNonce = args[3];
+        uint256 _buyerValue = args[4];
+        uint256 _buyerRate = args[5];
+        uint256 _tradePrice = args[6];
+
         require(_tradePrice > 0);
 
         if (!orders[_sellerAddress][_sellerNonce].isInitialized) {
@@ -74,7 +87,24 @@ contract Exchanger {
         require(_sellerRate == 0 || _sellerRate >= _tradePrice);
         require(_buyerRate == 0 || _buyerRate <= _tradePrice);
 
+        uint256 tradeValue;
+        if (orders[_sellerAddress][_sellerNonce].valueLeft < orders[_buyerAddress][_buyerNonce].valueLeft) {
+            tradeValue = orders[_sellerAddress][_sellerNonce].valueLeft;
+        } else {
+            tradeValue = orders[_buyerAddress][_buyerNonce].valueLeft;
+        }
 
+        currency1.withdrawForOrder(tradeValue, _sellerAddress, _buyerAddress);
+        currency2.withdrawForOrder(tradeValue.mul(_tradePrice) / BASE, _buyerAddress, _sellerAddress);
+
+        orders[_sellerAddress][_sellerNonce].valueLeft.div(tradeValue);
+        orders[_buyerAddress][_buyerNonce].valueLeft.div(tradeValue);
+        if (orders[_sellerAddress][_sellerNonce].valueLeft == 0) {
+            orders[_sellerAddress][_sellerNonce].isActive = false;
+        }
+        if (orders[_buyerAddress][_buyerNonce].valueLeft == 0) {
+            orders[_buyerAddress][_buyerNonce].isActive = false;
+        }
     }
 
     function _splitSignature(bytes memory sig) internal pure returns (uint8, bytes32, bytes32) {
@@ -109,7 +139,7 @@ contract Exchanger {
 
     function _checkSignature(
         address _signer,
-        uint32 _nonce,
+        uint256 _nonce,
         uint256 _value,
         uint256 _rate,
         bool _direction,
