@@ -9,21 +9,21 @@ contract CurrencyContract {
 
     IERC20 public currency;
 
-    address public executor;
+    address public exchanger;
 
     mapping(address => uint256) public balances;
 
     /**
      * @dev Throws if called by any account other than the owner.
      */
-    modifier onlyExecutor() {
-        require(msg.sender == executor);
+    modifier onlyExchanger() {
+        require(msg.sender == exchanger);
         _;
     }
 
     constructor(address ERC20ContractAddress, address _executorContractAddress) public {
         currency = IERC20(ERC20ContractAddress);
-        executor = _executorContractAddress;
+        exchanger = _executorContractAddress;
     }
 
     function deposit(uint _amount) public {
@@ -36,7 +36,7 @@ contract CurrencyContract {
         currency.transfer(msg.sender, _amount);
     }
 
-    function withdrawForOrder(uint256 _amount, address _from, address _to) public onlyExecutor {
+    function withdrawForOrder(uint256 _amount, address _from, address _to) public onlyExchanger {
         balances[_from] = balances[_from].sub(_amount);
         balances[_to] = balances[_to].add(_amount);
     }
