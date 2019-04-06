@@ -3,10 +3,20 @@ pragma solidity ^0.5.0;
 import "CurrencyContract.sol";
 
 contract Exchanger {
+    address public owner;
     address public backend;
 
+    CurrencyContract currency1;
+    CurrencyContract currency2;
+
     constructor(address _backend) public {
+        owner = msg.sender;
         backend = _backend;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner);
+        _;
     }
 
     modifier onlyBackend() {
@@ -34,11 +44,36 @@ contract Exchanger {
         uint256 _buyerValue,
         uint256 _buyerRate,
         bytes calldata _buyerSign,
-        uint256 _tradeRate
+        uint256 _tradePrice
     )
         onlyBackend
         external
     {
+        require(_checkSignature(_sellerAddress, _sellerNonce, _sellerValue, _sellerRate, false, _sellerSign));
+        require(_checkSignature(_buyerAddress, _buyerNonce, _buyerValue, _buyerRate, true, _buyerSign));
+        require(_tradePrice > 0);
+
+        if (!orders[_sellerAddress][_sellerNonce].isInitialized) {
+            orders[_sellerAddress][_sellerNonce] = Order({
+                valueLeft: _sellerValue,
+                isInitialized: true,
+                isActive: true
+            });
+        }
+        require(orders[_sellerAddress][_sellerNonce].isActive);
+
+        if (!orders[_buyerAddress][_buyerNonce].isInitialized) {
+            orders[_buyerAddress][_buyerNonce] = Order({
+                valueLeft: _buyerValue,
+                isInitialized: true,
+                isActive: true
+            });
+        }
+        require(orders[_buyerAddress][_buyerNonce].isActive);
+
+        require(_sellerRate == 0 || _sellerRate >= _tradePrice);
+        require(_buyerRate == 0 || _buyerRate <= _tradePrice);
+
 
     }
 
@@ -77,13 +112,14 @@ contract Exchanger {
         uint32 _nonce,
         uint256 _value,
         uint256 _rate,
+        bool _direction,
         bytes memory _sign
     )
         internal
         pure
         returns (bool)
     {
-        bytes32 message = _prefixed(keccak256(abi.encodePacked(_nonce, _value, _rate)));
+        bytes32 message = _prefixed(keccak256(abi.encodePacked(_nonce, _value, _rate, _direction)));
 
         address signedBy = _recoverSigner(message, _sign);
         return signedBy == _signer;
@@ -91,5 +127,10 @@ contract Exchanger {
 
     function cancelOrder(uint32 _nonce) external {
         orders[msg.sender][_nonce] = Order({valueLeft: 0, isInitialized: true, isActive: false});
+    }
+
+    function addCurrencyContracts(address _currency1, address _currency2) external onlyOwner {
+        currency1 = CurrencyContract(_currency1);
+        currency2 = CurrencyContract(_currency2);
     }
 }
