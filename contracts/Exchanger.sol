@@ -28,15 +28,12 @@ contract Exchanger {
         uint32 _sellerNonce,
         uint256 _sellerValue,
         uint256 _sellerRate,
-        bool _sellerDirection,
         bytes memory _sellerSign,
         address _buyerAddress,
         uint32 _buyerNonce,
         uint256 _buyerValue,
         uint256 _buyerRate,
-        bool _buyerDirection,
         bytes memory _buyerSign,
-        uint256 _tradeValue,
         uint256 _tradeRate
     )
         onlyBackend
