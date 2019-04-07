@@ -53,8 +53,8 @@ contract Exchanger {
         onlyBackend
         external
     {
-        require(_checkSignature(_sellerAddress, args[0], args[1], args[2], false, _sellerSign));
-        require(_checkSignature(_buyerAddress, args[3], args[4], args[5], true, _buyerSign));
+        require(checkSignature(_sellerAddress, args[0], args[1], args[2], false, _sellerSign));
+        require(checkSignature(_buyerAddress, args[3], args[4], args[5], true, _buyerSign));
 
         uint256 _sellerNonce = args[0];
         uint256 _sellerValue = args[1];
@@ -137,7 +137,7 @@ contract Exchanger {
         return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
     }
 
-    function _checkSignature(
+    function checkSignature(
         address _signer,
         uint256 _nonce,
         uint256 _value,
@@ -145,11 +145,11 @@ contract Exchanger {
         bool _direction,
         bytes memory _sign
     )
-        internal
+        public
         pure
         returns (bool)
     {
-        bytes32 message = _prefixed(keccak256(abi.encodePacked(_nonce, _value, _rate, _direction)));
+        bytes32 message = keccak256(abi.encodePacked(_nonce, _value, _rate, _direction));
 
         address signedBy = _recoverSigner(message, _sign);
         return signedBy == _signer;
