@@ -21,9 +21,9 @@ contract CurrencyContract {
         _;
     }
 
-    constructor(address ERC20ContractAddress, address _executorContractAddress) public {
+    constructor(address ERC20ContractAddress, address _exchangerContractAddress) public {
         currency = IERC20(ERC20ContractAddress);
-        exchanger = _executorContractAddress;
+        exchanger = _exchangerContractAddress;
     }
 
     function deposit(uint _amount) public {
