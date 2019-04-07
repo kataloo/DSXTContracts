@@ -36,7 +36,7 @@ contract CurrencyContract {
         currency.transfer(msg.sender, _amount);
     }
 
-    function withdrawForOrder(uint256 _amount, address _from, address _to) public onlyExchanger {
+    function transferForOrder(uint256 _amount, address _from, address _to) public onlyExchanger {
         balances[_from] = balances[_from].sub(_amount);
         balances[_to] = balances[_to].add(_amount);
     }

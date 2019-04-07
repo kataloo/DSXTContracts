@@ -94,11 +94,11 @@ contract Exchanger {
             tradeValue = orders[_buyerAddress][_buyerNonce].valueLeft;
         }
 
-        currency1.withdrawForOrder(tradeValue, _sellerAddress, _buyerAddress);
-        currency2.withdrawForOrder(tradeValue.mul(_tradePrice) / BASE, _buyerAddress, _sellerAddress);
+        currency1.transferForOrder(tradeValue, _sellerAddress, _buyerAddress);
+        currency2.transferForOrder(tradeValue.mul(_tradePrice) / BASE, _buyerAddress, _sellerAddress);
 
-        orders[_sellerAddress][_sellerNonce].valueLeft.div(tradeValue);
-        orders[_buyerAddress][_buyerNonce].valueLeft.div(tradeValue);
+        orders[_sellerAddress][_sellerNonce].valueLeft = orders[_sellerAddress][_sellerNonce].valueLeft.sub(tradeValue);
+        orders[_sellerAddress][_sellerNonce].valueLeft = orders[_buyerAddress][_buyerNonce].valueLeft.sub(tradeValue);
         if (orders[_sellerAddress][_sellerNonce].valueLeft == 0) {
             orders[_sellerAddress][_sellerNonce].isActive = false;
         }
